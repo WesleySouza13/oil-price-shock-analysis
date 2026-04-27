@@ -76,3 +76,15 @@ class Requests():
         print('=======')
         print(df_yfinance_)
         return pd.merge(df_sgs_, df_yfinance_, on='data', how='left').set_index('data')
+
+    def get_ibov(self, ticker, start, end):
+        brent = yf.download(tickers=ticker, start=start, end=end, interval='1mo')[['Close', 'Volume']]
+        brent.columns = brent.columns.droplevel(1)
+        brent = brent.reset_index()
+        brent = brent.rename(columns={'Date':'data', 
+                                    'Close':'Close_IBOV', 
+                                    'Volume':'Volume_IBOV'})
+        
+        brent['data'] = pd.to_datetime(brent['data'], dayfirst=True)
+        brent = brent.set_index('data')
+        return brent 
