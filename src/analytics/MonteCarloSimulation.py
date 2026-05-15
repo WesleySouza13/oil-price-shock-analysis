@@ -36,5 +36,11 @@ class MonteCarlo():
         t_student = t.rvs(gl, col.mean(), col.std(), n_simulations)
         
         return pd.Series(t_student, name=col_sim)
-# %%
-
+    
+    def T_student_shocks(self, n_simulations, shock, col_shock):
+        col = self.data[col_shock]
+        gl = len(col)-1 
+        shock_data = (col *shock/100) + col 
+        t_student = t.rvs(gl, shock_data.mean(), shock_data.std(), n_simulations) 
+        
+        return pd.Series(t_student, name=col_shock)
