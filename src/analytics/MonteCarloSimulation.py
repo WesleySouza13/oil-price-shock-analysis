@@ -1,7 +1,7 @@
 # %% 
 import numpy as np 
 import pandas as pd 
-
+from scipy.stats import t
 class MonteCarlo():
     def __init__(self, data:pd.DataFrame):
         self.data = data
@@ -29,5 +29,12 @@ class MonteCarlo():
                 df = pd.Series(mc, name=num)
                 mc_list.append(df)
         return pd.concat(mc_list, axis=1)
+    
+    def T_student_sim(self, n_simulations, col_sim:str):
+        col = self.data[col_sim]
+        gl = len(col)-1 #graus de liberdade
+        t_student = t.rvs(gl, col.mean(), col.std(), n_simulations)
+        
+        return pd.Series(t_student, name=col_sim)
 # %%
 
