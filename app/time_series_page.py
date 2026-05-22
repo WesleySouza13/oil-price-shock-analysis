@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd 
 from src.analytics.PlotSurface import Plot3d
 import os 
+from src.analytics.MarkovChain import MarkovModel
 
 codes_list = ['24364']
 start_date = "01/01/2003"
@@ -107,14 +108,56 @@ def calculate_sigma(petr4:pd.Series):
     ret = np.log(petr4)/petr4.shift()
     return ret.rolling(3).std().shift(-3)
 
-df_with_beta['sigma'] = calculate_sigma(df_with_beta['Close_PETR4.SA'])
+df_with_beta['Sigma'] = calculate_sigma(df_with_beta['Close_PETR4.SA'])
 # plotando linhas do sigma 
 fig_sigma = go.Figure()
-fig_sigma.add_trace(go.Scatter(x=df_with_beta.index, y=df_with_beta['sigma'], mode='lines', name='Beta', line=dict(color="#26ff00", width=3)))
+fig_sigma.add_trace(go.Scatter(x=df_with_beta.index, y=df_with_beta['Sigma'], mode='lines', name='Beta', line=dict(color="#26ff00", width=3)))
 fig_sigma.update_layout(title='Volatilidade PETR4.SA', xaxis_title='Tempo', yaxis_title='Sigma')
 st.plotly_chart(fig_sigma)
 
 # plotando area do sigma 
-surface  = Plot3d(df_with_beta['IBC-Br'], df_with_beta['BETA'], df_with_beta['sigma'], 'Área - Volatilidade por IBC-Br e Beta')
+surface  = Plot3d(df_with_beta['IBC-Br'], df_with_beta['BETA'], df_with_beta['Sigma'], 'Área - Volatilidade por IBC-Br e Beta')
 surface1 = surface.plot_surface()
 st.plotly_chart(surface1, use_container_width=True)
+
+# area de volatilidade por regime
+df_with_beta['Regime'] = MarkovModel(df_with_beta)
+df_with_beta['Regime'] = df_with_beta['Regime'].fillna(0)
+st.dataframe(df_with_beta)
+
+mask = df_with_beta['Regime'] == 0
+
+# plotando regime pelo sigma 
+fig_regime = go.Figure()
+fig_regime.add_trace(go.Scatter(x=df_with_beta.index, y=df_with_beta['Sigma'], mode='lines',line=dict(width=2, color="#26ff00"), name='sigma'))
+fig_regime.add_trace(go.Scatter(x=df_with_beta.index[mask], y=df_with_beta.loc[mask, 'Sigma'], mode='markers', marker=dict(size=8, color="#F5F500", symbol='circle'), name='regime'))
+fig_regime.update_layout(title='Volatilidade  com marcação de regimes',xaxis_title='Tempo',yaxis_title='Sigma',template='plotly_dark')
+st.plotly_chart(fig_regime)
+
+# plotando area de regime em 3d 
+reg3d  = Plot3d(mask, df_with_beta['BETA'], df_with_beta['Sigma'], 'Área da Volatilidade dado o Regime')
+reg_3d_plot = reg3d.plot_surface()
+st.plotly_chart(reg_3d_plot)
+
+# produçao do petroleo 
+
+petr4_prod = ['1389', '22707']
+prod_req = Requests(petr4_prod)
+data_prod = prod_req.get_data(start_date, end_date)
+data_prod = prod_req.get_dataframe()
+
+fig_prod = go.Figure()
+fig_prod.add_trace(go.Scatter(x=data_prod.index, y=data_prod['Produção de derivados de petróleo'].rolling(12).mean(), mode='lines',line=dict(width=2, color="#0011ff"), name='Produção de Derivados do Petróleo'))
+fig_prod.add_trace(go.Scatter(x=data_prod.index, y=data_prod['Balança comercial'].rolling(12).mean(), mode='lines', line=dict(width=2, color="#3bd27a"), name='Balança Comercial'))
+fig_prod.update_layout(title='Produção de Derivados de Petróleo e Balança Comercial - Série Suavizada')
+st.markdown("""
+    <style>
+    .block-container {
+        max-width: 95%;
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+st.plotly_chart(fig_prod, use_container_width=True)
