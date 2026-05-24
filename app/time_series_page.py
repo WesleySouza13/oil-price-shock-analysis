@@ -41,21 +41,23 @@ ibov_ = ibov['Close_IBOV']
 #=========================================================================================
 
 st.markdown("""
-            # Bem vindo (a)
+            # Hey! 
+            This is a solution to the problem of price volatility in oil scenarios in Brazil.
+            Enjoy this application! 
             
             
             """)
 
 fig_line = px.line(x=data.index, y=data['IBC-Br'])
-fig_line.update_layout(xaxis_title='Tempo', title='Histórico - IBC-Br', width=850, yaxis_title='IBC-Br')
+fig_line.update_layout(xaxis_title='Time', title='IBC-Br - Historical', width=850, yaxis_title='IBC-Br')
 
 fig_petr4 = go.Figure()
 fig_petr4.add_trace(go.Scatter(x=petr4.index, y=petr4, mode='lines', name='PETR4', line=dict(color="#0011FF", width=3)))
-fig_petr4.update_layout(title='Histórico - PETR4.SA', xaxis_title='Tempo', width=350)
+fig_petr4.update_layout(title= 'PETR4.SA - Historical', xaxis_title='Time', width=350)
 
 fig_ibov = go.Figure()
 fig_ibov.add_trace(go.Scatter(x=ibov_.index, y=ibov_, mode='lines', name='^IBOV', line=dict(color="#ff0000", width=3)))
-fig_ibov.update_layout(title='Histórico - IBOVESPA', xaxis_title='Tempo', width=350)
+fig_ibov.update_layout(title='IBOVESPA - Historical', xaxis_title='Time', width=350)
 
 
 # plotando grafico do IBC-Br 
@@ -83,11 +85,10 @@ def BETA(petra:pd.Series, ibov:pd.Series):
     return data.dropna()
 
 
-st.markdown('# Formulação - Índice Beta')
-st.text("""O índice Beta foi usado nesse trabalho para trabalhar como um indicador de sensibilidade do ativo pelo mercado. 
-            A fórmula é a razão entre a covariância do retorno do ativo e do mercado, com a variância do mercado. 
-            
-            Em nosso caso, como estamos explorando o sinal de volatilidade do petróleo Brasileiro, vamos usar o PETR4.SA (PetroBras) em conjunto com o ^IBOV (IBOVESPA).
+st.markdown('# Formulation - Beta Index')
+st.text("""The Beta index was used in this work as an indicator of the asset's sensitivity to the market.
+
+The formula is the ratio between the covariance of the asset's return and the market's return, with the variance of the market.
         
         """)
 beta_img_path = os.path.join('img', 'formula_beta.png')
@@ -96,7 +97,7 @@ st.image(beta_img_path)
 df_with_beta = BETA(petr4, ibov_)
 fig_beta = go.Figure()
 fig_beta.add_trace(go.Scatter(x=df_with_beta.index, y=df_with_beta['BETA'], mode='lines', name='Beta', line=dict(color="#26ff00", width=3)))
-fig_beta.update_layout(title='Histórico - BETA', xaxis_title='Tempo', yaxis_title='Beta')
+fig_beta.update_layout(title='BETA - Historical', xaxis_title='Time', yaxis_title='Beta')
 st.plotly_chart(fig_beta, use_container_width=True)
 
 # mostrando dataframe
@@ -109,14 +110,15 @@ def calculate_sigma(petr4:pd.Series):
     return ret.rolling(3).std().shift(-3)
 
 df_with_beta['Sigma'] = calculate_sigma(df_with_beta['Close_PETR4.SA'])
+
 # plotando linhas do sigma 
 fig_sigma = go.Figure()
-fig_sigma.add_trace(go.Scatter(x=df_with_beta.index, y=df_with_beta['Sigma'], mode='lines', name='Beta', line=dict(color="#26ff00", width=3)))
-fig_sigma.update_layout(title='Volatilidade PETR4.SA', xaxis_title='Tempo', yaxis_title='Sigma')
+fig_sigma.add_trace(go.Scatter(x=df_with_beta.index, y=df_with_beta['Sigma'], mode='lines', name='Beta', line=dict(color="#1b32b5", width=3)))
+fig_sigma.update_layout(title='PETR4.SA - Volatility', xaxis_title='Time', yaxis_title='Sigma')
 st.plotly_chart(fig_sigma)
 
 # plotando area do sigma 
-surface  = Plot3d(df_with_beta['IBC-Br'], df_with_beta['BETA'], df_with_beta['Sigma'], 'Área - Volatilidade por IBC-Br e Beta')
+surface  = Plot3d(df_with_beta['IBC-Br'], df_with_beta['BETA'], df_with_beta['Sigma'], 'Area - Volatility by IBC-Br and Beta')
 surface1 = surface.plot_surface()
 st.plotly_chart(surface1, use_container_width=True)
 
@@ -129,13 +131,21 @@ mask = df_with_beta['Regime'] == 0
 
 # plotando regime pelo sigma 
 fig_regime = go.Figure()
-fig_regime.add_trace(go.Scatter(x=df_with_beta.index, y=df_with_beta['Sigma'], mode='lines',line=dict(width=2, color="#26ff00"), name='sigma'))
-fig_regime.add_trace(go.Scatter(x=df_with_beta.index[mask], y=df_with_beta.loc[mask, 'Sigma'], mode='markers', marker=dict(size=8, color="#F5F500", symbol='circle'), name='regime'))
-fig_regime.update_layout(title='Volatilidade  com marcação de regimes',xaxis_title='Tempo',yaxis_title='Sigma',template='plotly_dark')
+fig_regime.add_trace(go.Scatter(x=df_with_beta.index, y=df_with_beta['Sigma'], mode='lines',line=dict(width=2, color="#1b32b5"), name='sigma'))
+fig_regime.add_trace(go.Scatter(x=df_with_beta.index[mask], y=df_with_beta.loc[mask, 'Sigma'], mode='markers', marker=dict(size=8, color="#0CFF04", symbol='circle'), name='regime'))
+fig_regime.update_layout(title='Volatility with regime marking',xaxis_title='Time',yaxis_title='Sigma',template='plotly_dark')
 st.plotly_chart(fig_regime)
 
+# plotando histograma do sigma e regime 
+df_hist = df_with_beta.copy()
+df_hist['Regime'].replace(0, 'Yes', inplace=True)
+df_hist['Regime'].replace(1, 'No', inplace=True)
+hist1 = px.histogram(df_hist, 'Sigma', color='Regime') 
+hist1.update_layout(title='Distribution Sigma and Regime', yaxis_title='Frequency')
+st.plotly_chart(hist1)
+
 # plotando area de regime em 3d 
-reg3d  = Plot3d(mask, df_with_beta['BETA'], df_with_beta['Sigma'], 'Área da Volatilidade dado o Regime')
+reg3d  = Plot3d(mask, df_with_beta['BETA'], df_with_beta['Sigma'], 'Volatility Area with Regime')
 reg_3d_plot = reg3d.plot_surface()
 st.plotly_chart(reg_3d_plot)
 
@@ -149,7 +159,7 @@ data_prod = prod_req.get_dataframe()
 fig_prod = go.Figure()
 fig_prod.add_trace(go.Scatter(x=data_prod.index, y=data_prod['Produção de derivados de petróleo'].rolling(12).mean(), mode='lines',line=dict(width=2, color="#0011ff"), name='Produção de Derivados do Petróleo'))
 fig_prod.add_trace(go.Scatter(x=data_prod.index, y=data_prod['Balança comercial'].rolling(12).mean(), mode='lines', line=dict(width=2, color="#3bd27a"), name='Balança Comercial'))
-fig_prod.update_layout(title='Produção de Derivados de Petróleo e Balança Comercial - Série Suavizada')
+fig_prod.update_layout(title='Production of Petroleum Derivatives and Trade Balance - Smoothed Series')
 st.markdown("""
     <style>
     .block-container {
