@@ -73,11 +73,11 @@ with col2:
 # calculando lados dos preços
 worst_price = petr4.min()
 best_price = petr4.max()
-
+change_price_best = petr4.pct_change().max()
+change_price_worst = ((worst_price - petr4.mean())/petr4.mean())*100
 row = st.container(horizontal=True)
 with row:
-    st.metric('Worst Price - PETR4.SA',np.round(worst_price,2), border=True, chart_type='line', chart_data=petr4)
-    st.metric("Best Price - PETR4.SA", np.round(best_price,2),  border=True, chart_type='area', chart_data=petr4)
+    st.metric("Monthly Price - PETR4.SA", np.round(best_price,2), np.round(change_price_best,2), border=True, chart_type='area', chart_data=petr4)
     
 # calculando beta 
 def BETA(petra:pd.Series, ibov:pd.Series): 
@@ -160,8 +160,7 @@ data_prod = prod_req.get_dataframe()
 fig_prod = go.Figure()
 fig_prod.add_trace(go.Scatter(x=data_prod.index, y=data_prod['Produção de derivados de petróleo'].rolling(12).mean(), mode='lines',line=dict(width=2, color="#0011ff"), name='Produção de Derivados do Petróleo'))
 fig_prod.add_trace(go.Scatter(x=data_prod.index, y=data_prod['Balança comercial'].rolling(12).mean(), mode='lines', line=dict(width=2, color="#3bd27a"), name='Balança Comercial'))
-fig_prod.update_layout(title='Production of Petroleum Derivatives and Trade Balance - Smoothed Series')
-
+fig_prod.update_layout(title='Production of Petroleum Derivatives and Trade Balance - Moving AVG')
 
 
 

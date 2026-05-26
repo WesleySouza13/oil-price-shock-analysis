@@ -7,6 +7,9 @@ import plotly.express as px
 from src.analytics.BetaCalculate import BETA
 from src.analytics.PlotSurface import Plot3d
 import numpy as np 
+import joblib 
+import os 
+import plotly.graph_objects as go
 
 st.markdown('# MonteCarlo Simulation')
 st.text("""
@@ -79,7 +82,7 @@ with col4:
 with col_box2:
     st.plotly_chart(box2,  width='stretch')
 
-surface_beta = Plot3d(data_sim['Close_PETR4.SA'].fillna(data_sim['IBC-Br'].median()), data_sim['Close_IBOV'], data_sim['BETA'], 'BETA Surface with prices')
+surface_beta = Plot3d(data_sim['Close_IBOV'], data_sim['Close_PETR4.SA'], data_sim['BETA'], 'BETA Surface with prices')
 plot_beta_surface = surface_beta.plot_surface()
 st.plotly_chart(plot_beta_surface)
 
@@ -88,39 +91,112 @@ st.plotly_chart(plot_beta_surface)
 st.markdown("Select a interval for simulation:")
 start_mc = st.date_input('Start', min_value='2004-01-01', max_value=today, key='start_date')
 end_mc = st.date_input('End', min_value='2005-01-01', max_value=today, key='end_date')
-
+scenarios = st.number_input('Scenarios', min_value=252)
 st.markdown('Simulation Interval - Rolling Window Default: 12')
 data_sim = data_sim.loc[start_mc:end_mc]
 
+# montecarlo 
+mc = MonteCarlo(data_sim[['IBC-Br','BETA']])
+mc_normal = mc.normal_scenario(scenarios)
+
+fig_mc1, fig_mc2 = st.columns(2)
+fig_mc = px.histogram(mc_normal['IBC-Br'])
+fig_mc.update_layout(title='IBC-Br - Normal Simulation', yaxis_title='Frequency')
+fig_mc_beta = px.histogram(mc_normal['BETA'])
+fig_mc_beta.update_layout(title='BETA - Normal Simulation', yaxis_title='Frequency')
+
+with fig_mc1:
+    st.plotly_chart(fig_mc)
+
+with fig_mc2:
+    st.plotly_chart(fig_mc_beta)
+
+st.dataframe(mc_normal)
+# carregando dados de treino para o modelo ver e fazer inferencia 
+data_train = os.path.join('data', 'processed', 'dados_modelagem.csv')
+data = pd.read_csv(data_train)
+y_train = data[['data','IBC-Br', 'BETA']]
+y_train = y_train.set_index('data')
+y_train = y_train.loc['2004-01-01':'2024-06-01']
+
+# carregando modelo
+model_path = os.path.join('modelARDL.pkl')
+model = joblib.load(model_path)
+model.model.data.dates = None
+model.model.data.freq = None
+model.model._index = pd.RangeIndex(len(y_train))
+model.model._index_generated = False
+model._index = pd.RangeIndex(start=0, stop=len(data))
+
+def predict(exog):
+    return model.predict(start=len(y_train),end=len(y_train) + len(exog) - model.model._maxlag - 1,exog_oos=exog)
+
+normal_pred = predict(mc_normal)
+hist_normal = px.histogram(normal_pred)
+hist_normal.update_layout(title='Distribuition Sigma - Normal scenarios [No Shocks]',  yaxis_title='Frequency')
+st.plotly_chart(hist_normal)
+normal_surf = Plot3d(mc_normal['IBC-Br'][:len(normal_pred)], mc_normal['BETA'][:len(normal_pred)], normal_pred, title='Area Sigma - Normal Simulation')
+st.plotly_chart(normal_surf.plot_surface())
+
+# criando shocks 
+box = st.container(border=True)
+st.warning('Input the shocks without percents, for example, if want do a simulation, use: 2% -> 2, 50% -> 50...', icon='🚨')
+
+with box: 
+    shock_ibc = st.number_input('Input Shock in IBC-Br')
+    shock_beta = st.number_input('Input Shock in BETA')
+
+simulations = st.number_input('Simulations', min_value=2)
+
+# fazendo multiplas simulaçoes
+pred_list = []
+df_sim_list = []
+fig_plot_sim = go.Figure()
+for _ in range(simulations):
+    ibc = mc.T_student_shocks(scenarios, shock_ibc, 'IBC-Br')
+    beta = mc.T_student_shocks(scenarios, shock_beta, 'BETA')
+    df_sim = pd.concat([ibc, beta], axis=1)
+    predict_sim = predict(df_sim)
+    pred_series = pd.Series(predict_sim, name='Sigma')
+    y_hat = np.cumsum(predict_sim)/np.arange(len(predict_sim))
+    pred_list.append(pred_series)
+    df_sim_list.append(df_sim)
+    fig_plot_sim.add_trace(go.Scatter(y=y_hat,mode='lines',line=dict(width=1),showlegend=False))
+fig_plot_sim.update_layout(title=f'Simulations: {simulations}', xaxis_title='steps', yaxis_title='mean')
+st.plotly_chart(fig_plot_sim, use_container_width=True)
+
+#juntando previsoes e variaveis independentes
+pred_concat = pd.concat(pred_list)
+df_sim_concat = pd.concat(df_sim_list)
+plot_sim_area = Plot3d(df_sim_concat['IBC-Br'][:len(pred_concat)], df_sim_concat['BETA'][:len(pred_concat)], pred_concat, title=f'Area Sigma - IBC-Br Shock: {shock_ibc}% | BETA Shock: {shock_beta}%')
+st.plotly_chart(plot_sim_area.plot_surface())
+def diagnostic(pred): 
+    beta_high_mean = np.array(pred)
+    text = f"""
+
+    Mean Predict: {round(beta_high_mean.mean(), 3)} 
+
+    Min Value: {round(beta_high_mean.min(),2)}
+    
+    Max Value: {round(beta_high_mean.max(),2)}
+
+    Std: {round(beta_high_mean.std(),2)} 
 
 
+    50% of the volatility in this scenario is greater than: {round(np.median(beta_high_mean),3)}
+    
+    25% of the volatility in this scenario is greater than: {round(np.percentile(beta_high_mean,75),2)}
+    
+    10% of the volatility in this scenario is greater than: {round(np.percentile(beta_high_mean, 90),2)}
+    
+    5% of the volatility in this scenario is greater than: {round(np.percentile(beta_high_mean, 95),2)}
+    """
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    return text
+# caixa para diagnosticos
+box2 = st.container(border=True)
+with box2:
+    st.write(diagnostic(pred_list))
 
 
 
