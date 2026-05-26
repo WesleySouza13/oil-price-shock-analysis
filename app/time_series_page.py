@@ -20,8 +20,6 @@ req_data = Requests(codes_list)
 data = req_data.get_data(start_date, end_date)
 data = req_data.get_dataframe() #dataframe
 #st.markdown('hello')
-print(data)
-
 
 # pegando dados de PETR4 e IBOV no yfinance 
 tickers = ['PETR4.SA']
@@ -72,10 +70,16 @@ with col2:
     st.plotly_chart(fig_petr4)
     
 
-# calculando coeficiente beta 
-#st.text("Historico de sensibilidade dos preços ao longo do tempo por Coeficiente Beta")
-#window = st.number_input('Digite o janelamento (em Meses):', min_value=12, max_value=100)
-# funçao para o calculo de BETA 
+# calculando lados dos preços
+worst_price = petr4.min()
+best_price = petr4.max()
+
+row = st.container(horizontal=True)
+with row:
+    st.metric('Worst Price - PETR4.SA',np.round(worst_price,2), border=True, chart_type='line', chart_data=petr4)
+    st.metric("Best Price - PETR4.SA", np.round(best_price,2),  border=True, chart_type='area', chart_data=petr4)
+    
+# calculando beta 
 def BETA(petra:pd.Series, ibov:pd.Series): 
     data = pd.concat([petra, ibov], join='inner', axis=1).dropna()
     returns = data.pct_change()
@@ -91,9 +95,6 @@ st.text("""The Beta index was used in this work as an indicator of the asset's s
 The formula is the ratio between the covariance of the asset's return and the market's return, with the variance of the market.
         
         """)
-beta_img_path = os.path.join('img', 'formula_beta.png')
-st.image(beta_img_path)
-
 df_with_beta = BETA(petr4, ibov_)
 fig_beta = go.Figure()
 fig_beta.add_trace(go.Scatter(x=df_with_beta.index, y=df_with_beta['BETA'], mode='lines', name='Beta', line=dict(color="#26ff00", width=3)))
@@ -160,6 +161,11 @@ fig_prod = go.Figure()
 fig_prod.add_trace(go.Scatter(x=data_prod.index, y=data_prod['Produção de derivados de petróleo'].rolling(12).mean(), mode='lines',line=dict(width=2, color="#0011ff"), name='Produção de Derivados do Petróleo'))
 fig_prod.add_trace(go.Scatter(x=data_prod.index, y=data_prod['Balança comercial'].rolling(12).mean(), mode='lines', line=dict(width=2, color="#3bd27a"), name='Balança Comercial'))
 fig_prod.update_layout(title='Production of Petroleum Derivatives and Trade Balance - Smoothed Series')
+
+
+
+
+
 st.markdown("""
     <style>
     .block-container {

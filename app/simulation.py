@@ -1,4 +1,4 @@
-import os
+import pandas as pd 
 import streamlit as st
 from src.data_eng.DataRequest import Requests
 from src.analytics.MonteCarloSimulation import MonteCarlo
@@ -6,6 +6,7 @@ import datetime
 import plotly.express as px
 from src.analytics.BetaCalculate import BETA
 from src.analytics.PlotSurface import Plot3d
+import numpy as np 
 
 st.markdown('# MonteCarlo Simulation')
 st.text("""
@@ -78,19 +79,18 @@ with col4:
 with col_box2:
     st.plotly_chart(box2,  width='stretch')
 
+surface_beta = Plot3d(data_sim['Close_PETR4.SA'].fillna(data_sim['IBC-Br'].median()), data_sim['Close_IBOV'], data_sim['BETA'], 'BETA Surface with prices')
+plot_beta_surface = surface_beta.plot_surface()
+st.plotly_chart(plot_beta_surface)
+
+
 # entradas para a simulaçao 
 st.markdown("Select a interval for simulation:")
 start_mc = st.date_input('Start', min_value='2004-01-01', max_value=today, key='start_date')
 end_mc = st.date_input('End', min_value='2005-01-01', max_value=today, key='end_date')
 
-
-
-
-
-
-
-
-
+st.markdown('Simulation Interval - Rolling Window Default: 12')
+data_sim = data_sim.loc[start_mc:end_mc]
 
 
 
