@@ -66,10 +66,10 @@ st.plotly_chart(fig_line)
 
 col1, col2 = st.columns(2, gap='large')
 with col1:
-    st.plotly_chart(fig_ibov, use_container_width=True)
+    st.plotly_chart(fig_ibov)
     
 with col2:
-    st.plotly_chart(fig_petr4, use_container_width=True)
+    st.plotly_chart(fig_petr4)
     
 
 # calculando coeficiente beta 
@@ -98,7 +98,7 @@ df_with_beta = BETA(petr4, ibov_)
 fig_beta = go.Figure()
 fig_beta.add_trace(go.Scatter(x=df_with_beta.index, y=df_with_beta['BETA'], mode='lines', name='Beta', line=dict(color="#26ff00", width=3)))
 fig_beta.update_layout(title='BETA - Historical', xaxis_title='Time', yaxis_title='Beta')
-st.plotly_chart(fig_beta, use_container_width=True)
+st.plotly_chart(fig_beta)
 
 # mostrando dataframe
 df_with_beta['IBC-Br'] = data['IBC-Br']
@@ -120,7 +120,7 @@ st.plotly_chart(fig_sigma)
 # plotando area do sigma 
 surface  = Plot3d(df_with_beta['IBC-Br'], df_with_beta['BETA'], df_with_beta['Sigma'], 'Area - Volatility by IBC-Br and Beta')
 surface1 = surface.plot_surface()
-st.plotly_chart(surface1, use_container_width=True)
+st.plotly_chart(surface1)
 
 # area de volatilidade por regime
 df_with_beta['Regime'] = MarkovModel(df_with_beta)
