@@ -10,7 +10,7 @@ import numpy as np
 import joblib 
 import os 
 import plotly.graph_objects as go
-
+from datetime import date
 st.markdown('# MonteCarlo Simulation')
 st.text("""
         In this block, do any simulation using Monte Carlo for simulate diferents scenarios in economy and market.
@@ -19,8 +19,8 @@ st.text("""
 
 # simulaçao 
 today = datetime.date.today()
-start = st.date_input('Start', min_value='2004-01-01', max_value=today)
-end =  st.date_input('End', min_value='2005-01-01', max_value=today)
+start = st.date_input('Start', value=date(2020,1,1), min_value=date(2004, 1,1), max_value=today, key='start')
+end =  st.date_input('End', value=today, min_value=start, max_value=today, key='end')
 
 req = Requests(['24364', '433'])
 start_req = start.strftime('%d/%m/%Y')
