@@ -50,11 +50,11 @@ fig_line = px.line(x=data.index, y=data['IBC-Br'])
 fig_line.update_layout(xaxis_title='Time', title='IBC-Br - Historical', width=850, yaxis_title='IBC-Br')
 
 fig_petr4 = go.Figure()
-fig_petr4.add_trace(go.Scatter(x=petr4.index, y=petr4, mode='lines', name='PETR4', line=dict(color="#0011FF", width=3)))
+fig_petr4.add_trace(go.Scatter(x=petr4.index, y=petr4, mode='lines', name='PETR4', line=dict(color="#00D2C4", width=3)))
 fig_petr4.update_layout(title= 'PETR4.SA - Historical', xaxis_title='Time', width=350)
 
 fig_ibov = go.Figure()
-fig_ibov.add_trace(go.Scatter(x=ibov_.index, y=ibov_, mode='lines', name='^IBOV', line=dict(color="#ff0000", width=3)))
+fig_ibov.add_trace(go.Scatter(x=ibov_.index, y=ibov_, mode='lines', name='^IBOV', line=dict(color="#94A3B8", width=3)))
 fig_ibov.update_layout(title='IBOVESPA - Historical', xaxis_title='Time', width=350)
 
 
@@ -97,7 +97,7 @@ The formula is the ratio between the covariance of the asset's return and the ma
         """)
 df_with_beta = BETA(petr4, ibov_)
 fig_beta = go.Figure()
-fig_beta.add_trace(go.Scatter(x=df_with_beta.index, y=df_with_beta['BETA'], mode='lines', name='Beta', line=dict(color="#26ff00", width=3)))
+fig_beta.add_trace(go.Scatter(x=df_with_beta.index, y=df_with_beta['BETA'], mode='lines', name='Beta', line=dict(color="#34D399", width=3)))
 fig_beta.update_layout(title='BETA - Historical', xaxis_title='Time', yaxis_title='Beta')
 st.plotly_chart(fig_beta)
 
@@ -114,13 +114,13 @@ df_with_beta['Sigma'] = calculate_sigma(df_with_beta['Close_PETR4.SA'])
 
 # plotando linhas do sigma 
 fig_sigma = go.Figure()
-fig_sigma.add_trace(go.Scatter(x=df_with_beta.index, y=df_with_beta['Sigma'], mode='lines', name='Beta', line=dict(color="#1b32b5", width=3)))
+fig_sigma.add_trace(go.Scatter(x=df_with_beta.index, y=df_with_beta['Sigma'], mode='lines', name='Beta', line=dict(color="#FC3636", width=3)))
 fig_sigma.update_layout(title='PETR4.SA - Volatility', xaxis_title='Time', yaxis_title='Sigma')
 st.plotly_chart(fig_sigma)
 
 sigma_trend = df_with_beta['Sigma'].rolling(12).mean()
 trend_sigma_fig = go.Figure()
-trend_sigma_fig.add_trace(go.Scatter(x=sigma_trend.index, y=sigma_trend, mode='lines', name='Sigma', line=dict(color="#ff0000", width=3)))
+trend_sigma_fig.add_trace(go.Scatter(x=sigma_trend.index, y=sigma_trend, mode='lines', name='Sigma', line=dict(color="#FC3636", width=3)))
 trend_sigma_fig.update_layout(title='Trend - Volatility', xaxis_title='Time', yaxis_title='Sigma', )
 st.plotly_chart(trend_sigma_fig)
 
@@ -139,7 +139,7 @@ mask = df_with_beta['Regime'] == 0
 
 # plotando regime pelo sigma 
 fig_regime = go.Figure()
-fig_regime.add_trace(go.Scatter(x=df_with_beta.index, y=df_with_beta['Sigma'], mode='lines',line=dict(width=2, color="#1b32b5"), name='sigma'))
+fig_regime.add_trace(go.Scatter(x=df_with_beta.index, y=df_with_beta['Sigma'], mode='lines',line=dict(width=2, color="#FC3636"), name='sigma'))
 fig_regime.add_trace(go.Scatter(x=df_with_beta.index[mask], y=df_with_beta.loc[mask, 'Sigma'], mode='markers', marker=dict(size=8, color="#0CFF04", symbol='circle'), name='regime'))
 fig_regime.update_layout(title='Volatility with regime marking',xaxis_title='Time',yaxis_title='Sigma',template='plotly_dark')
 st.plotly_chart(fig_regime)
@@ -169,6 +169,11 @@ fig_prod.add_trace(go.Scatter(x=data_prod.index, y=data_prod['Produção de deri
 fig_prod.add_trace(go.Scatter(x=data_prod.index, y=data_prod['Balança comercial'].rolling(12).mean(), mode='lines', line=dict(width=2, color="#3bd27a"), name='Balança Comercial'))
 fig_prod.update_layout(title='Production of Petroleum Derivatives and Trade Balance - Moving AVG')
 st.plotly_chart(fig_prod, use_container_width=True)
+
+# area de produçao de derivados, ibc-br e petr4 
+fig_ibc_prod = Plot3d(data_prod['Produção de derivados de petróleo'][:len(df_with_beta)], df_with_beta['IBC-Br'], df_with_beta['Close_PETR4.SA'], 'PETR4 Dynamics Across Economic Activity and Oil Production')
+st.plotly_chart(fig_ibc_prod.plot_surface())
+
 
 # criando funçao para calculo de drawdown
 def drawdown(data:pd.Series):
