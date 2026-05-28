@@ -11,6 +11,7 @@ import joblib
 import os 
 import plotly.graph_objects as go
 from datetime import date
+from scipy.stats import t
 st.markdown('# MonteCarlo Simulation')
 st.text("""
         In this block, do any simulation using Monte Carlo for simulate diferents scenarios in economy and market.
@@ -198,10 +199,40 @@ box2 = st.container(border=True)
 with box2:
     st.write(diagnostic(pred_list))
 
+# calculando integvalos de confiança
+def confiance_interval(pred:pd.Series, conf:float):
+    conf_ = conf/100
+    sample = pred.sample(len(pred), replace=True)
+    alpha = 1-conf_
+    t_ = t.ppf(1-alpha/2, len(pred)-1)
+    inf_limit = sample.mean() - t_ * (sample.std()/len(sample)**0.5)
+    sup_limit = sample.mean() + t_ * (sample.std()/len(sample)**0.5)
 
+    return inf_limit, sup_limit
+confiance = st.number_input('Confidence:', min_value=50, max_value=99)
+#confiance_interval_ = confiance_interval(pred_concat, confiance)
+# verificando diferentes simulaçoes por intervalo de confiança 
+if confiance: 
+    real_mean = pred_concat.mean()
+    ci_simulations = st.number_input('CI Simulations', min_value=2, max_value=10000, key='ci_sim')
+    
+    ci_list = []
+    for _ in range(ci_simulations):
+        ic = confiance_interval(pred_concat, confiance)
+        ci_list.append(ic)
+        
+df_ci = pd.DataFrame(ci_list, columns=['inf', 'sup'])
+df_ci['True_Mean'] = real_mean
+df_ci['Confiance'] = (df_ci['True_Mean']>df_ci['inf']) & (df_ci['True_Mean']<df_ci['sup'])
+df_ci['Confiance'] = df_ci['Confiance'].replace(True, 1)
+df_ci['Confiance'] = df_ci['Confiance'].replace(False, 0)
 
+st.dataframe(df_ci)
 
+conf_row = st.container(border=True)
 
+with conf_row:
+    st.metric(value=np.round(df_ci['Confiance'].mean(),2), label='Simulations Confiance (%)', delta=round(df_ci['Confiance'].mean() - (confiance/100),2))
 
 st.markdown("""
     <style>
