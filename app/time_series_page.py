@@ -118,6 +118,13 @@ fig_sigma.add_trace(go.Scatter(x=df_with_beta.index, y=df_with_beta['Sigma'], mo
 fig_sigma.update_layout(title='PETR4.SA - Volatility', xaxis_title='Time', yaxis_title='Sigma')
 st.plotly_chart(fig_sigma)
 
+sigma_trend = df_with_beta['Sigma'].rolling(12).mean()
+trend_sigma_fig = go.Figure()
+trend_sigma_fig.add_trace(go.Scatter(x=sigma_trend.index, y=sigma_trend, mode='lines', name='Sigma', line=dict(color="#ff0000", width=3)))
+trend_sigma_fig.update_layout(title='Trend - Volatility', xaxis_title='Time', yaxis_title='Sigma', )
+st.plotly_chart(trend_sigma_fig)
+
+
 # plotando area do sigma 
 surface  = Plot3d(df_with_beta['IBC-Br'], df_with_beta['BETA'], df_with_beta['Sigma'], 'Area - Volatility by IBC-Br and Beta')
 surface1 = surface.plot_surface()
@@ -161,9 +168,29 @@ fig_prod = go.Figure()
 fig_prod.add_trace(go.Scatter(x=data_prod.index, y=data_prod['Produção de derivados de petróleo'].rolling(12).mean(), mode='lines',line=dict(width=2, color="#0011ff"), name='Produção de Derivados do Petróleo'))
 fig_prod.add_trace(go.Scatter(x=data_prod.index, y=data_prod['Balança comercial'].rolling(12).mean(), mode='lines', line=dict(width=2, color="#3bd27a"), name='Balança Comercial'))
 fig_prod.update_layout(title='Production of Petroleum Derivatives and Trade Balance - Moving AVG')
+st.plotly_chart(fig_prod, use_container_width=True)
 
+# criando funçao para calculo de drawdown
+def drawdown(data:pd.Series):
+    max_rolling = data.cummax()
+    return (data/max_rolling)-1
 
+dd_petr4 = drawdown(petr4)
+fig_dd_petr4 = px.area(dd_petr4)
+fig_dd_petr4.update_layout(title='Drawdown - Close_PETR4.SA', yaxis_title='Drawdown')
 
+#calculando dd para o ibov 
+dd_ibov = drawdown(ibov_)
+fig_dd_ibov = px.area(dd_ibov)
+fig_dd_ibov.update_layout(title='Drawdown - IBOVESPA', yaxis_title='Drawdown')
+
+dd_col1, dd_col2 = st.columns(2)
+with dd_col1:
+    st.plotly_chart(fig_dd_petr4)
+    st.metric(label='Min Drawdown', value=round(dd_petr4.min(),2))
+with dd_col2:
+    st.plotly_chart(fig_dd_ibov)
+    st.metric(label='Min Drawdown', value=round(dd_ibov.min(),2))
 
 st.markdown("""
     <style>
@@ -174,5 +201,3 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-
-st.plotly_chart(fig_prod, use_container_width=True)
