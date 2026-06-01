@@ -90,7 +90,7 @@ st.plotly_chart(plot_beta_surface)
 
 # entradas para a simulaçao 
 st.markdown("Select a interval for simulation:")
-start_mc = st.date_input('Start', min_value='2004-01-01', max_value=today, key='start_date')
+start_mc = st.date_input('Start', value=date(2020,1,1),min_value='2004-01-01', max_value=today, key='start_date')
 end_mc = st.date_input('End', min_value='2005-01-01', max_value=today, key='end_date')
 scenarios = st.number_input('Scenarios', min_value=252)
 st.markdown('Simulation Interval - Rolling Window Default: 12')
@@ -163,6 +163,7 @@ for _ in range(simulations):
     pred_list.append(pred_series)
     df_sim_list.append(df_sim)
     fig_plot_sim.add_trace(go.Scatter(y=y_hat,mode='lines',line=dict(width=1),showlegend=False))
+    
 fig_plot_sim.update_layout(title=f'Simulations: {simulations}', xaxis_title='steps', yaxis_title='mean')
 st.plotly_chart(fig_plot_sim, use_container_width=True)
 
