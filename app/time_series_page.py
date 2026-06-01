@@ -192,10 +192,10 @@ fig_dd_ibov.update_layout(title='Drawdown - IBOVESPA', yaxis_title='Drawdown')
 dd_col1, dd_col2 = st.columns(2)
 with dd_col1:
     st.plotly_chart(fig_dd_petr4)
-    st.metric(label='Min Drawdown', value=round(dd_petr4.min(),2))
+    st.metric(label='Max Drawdown', value=round(dd_petr4.min(),2))
 with dd_col2:
     st.plotly_chart(fig_dd_ibov)
-    st.metric(label='Min Drawdown', value=round(dd_ibov.min(),2))
+    st.metric(label='Max Drawdown', value=round(dd_ibov.min(),2))
 
 st.markdown("""
     <style>
