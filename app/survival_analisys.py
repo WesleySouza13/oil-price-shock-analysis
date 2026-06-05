@@ -34,8 +34,6 @@ def survival_model():
 survival_f = survival_model()
 fig = px.line(survival_f)
 fig.update_layout(title='Survival Curve - Kaplan Meier', xaxis_title='Steps', yaxis_title='Prob.')
-
-st.dataframe(new_data)
 st.plotly_chart(fig)
 
 #criando modelo de hazard 
@@ -50,20 +48,10 @@ def cph():
     
     return cph_model.print_summary(), fig, fig2
 
-st.markdown("""
-        **Cox Model - Features Effects in Survival Curves**
-        """)
-box1, box2 = st.columns(2)
-with box1:
-    fig_1 = cph()[1]
-    st.pyplot(fig_1)
-with box2: 
-    fig_2 = cph()[2]
-    st.pyplot(fig_2)
-    
+
 st.markdown("# Survival Prediction")
-start = st.date_input('Start', min_value='2020-01-01', max_value=datetime.date.today(), value='2020-01-01')
-end = st.date_input('End', min_value='2020-02-01', max_value=datetime.date.today(), value='2020-02-01')
+start = st.date_input('Start', min_value='2019-01-01', max_value=datetime.date.today(), value='2020-01-01')
+end = st.date_input('End', min_value='2019-02-01', max_value=datetime.date.today(), value='2020-05-01')
 
 #pegando dados 
 codes = ['1389', '24364']
@@ -76,3 +64,50 @@ ibov = req.get_ibov('^BVSP', start, end)
 # dataframe para previsoes
 petr4['Close_IBOV'] = ibov['Close_IBOV']
 df_pred = petr4.copy()
+
+# fazendo previsoes com modelo de Kaplan 
+cox_model = CoxPHFitter().fit(new_data, duration_col='t', event_col='regime') # re-treinando o modelo 
+pred_cox = cox_model.predict_survival_function(df_pred)
+prob = 1 - pred_cox.iloc[-1]
+prob_fig = px.line(prob,color_discrete_sequence=['red'] )
+prob_fig.update_layout(title='Predicted Event Risk by Scenario', xaxis_title='date', yaxis_title='predict')
+st.plotly_chart(prob_fig)
+prob_sequence = 1-pred_cox
+
+
+prob_heatmap = px.imshow(prob_sequence, color_continuous_scale='RdBu_r')
+prob_heatmap.update_layout(title='Probability of the Event - Heatmap', yaxis_title='steps')
+st.plotly_chart(prob_heatmap)
+
+prob.index = prob.index.strftime('%Y-%m-%d')
+max_probIndex = prob.idxmax()
+max_prob = prob.max()
+min_probIndex = prob.idxmin()
+min_prob = prob.min()
+col1, col2 = st.columns(2)
+
+#criando previsoes para datas em risco
+df_pred.index = df_pred.index.strftime('%Y-%m-%d')
+survival_curve = cox_model.predict_survival_function(df_pred)
+survival_curve = survival_curve[[max_probIndex, min_probIndex]]
+
+#plotando figura filtradas 
+survival_fig = px.line(survival_curve, color_discrete_sequence=['red', 'orange'])
+survival_fig.update_layout(title='Event Risk Dates - Survival Curves', xaxis_title='steps', yaxis_title='Survival Prob.')
+st.plotly_chart(survival_fig)
+with col1:
+        with st.container(border=True):
+            st.write('Hightest Event Risk:')
+            st.text(f'Date: {max_probIndex}')
+            st.write(max_prob*100,'%')
+        
+with col2:
+        with st.container(border=True):
+            st.write('Lowest Event Risk:')
+            st.text(f'Date: {min_probIndex}')
+            st.write(round(min_prob*100,3),'%')
+        
+coef = cox_model.params_
+with st.container(border=True):
+    for value, name in zip(coef,df_pred.columns ):
+        st.write(f'Feature: {name} | Coef ',round(value,4))
