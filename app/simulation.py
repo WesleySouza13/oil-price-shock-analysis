@@ -153,6 +153,8 @@ simulations = st.number_input('Simulations', min_value=2)
 pred_list = []
 df_sim_list = []
 fig_plot_sim = go.Figure()
+fig_plot_ibc = go.Figure()
+fig_plot_beta = go.Figure()
 for _ in range(simulations):
     ibc = mc.T_student_shocks(scenarios, shock_ibc, 'IBC-Br')
     beta = mc.T_student_shocks(scenarios, shock_beta, 'BETA')
@@ -162,10 +164,25 @@ for _ in range(simulations):
     y_hat = np.cumsum(predict_sim)/np.arange(len(predict_sim))
     pred_list.append(pred_series)
     df_sim_list.append(df_sim)
-    fig_plot_sim.add_trace(go.Scatter(y=y_hat,mode='lines',line=dict(width=1),showlegend=False))
+    fig_plot_sim.add_trace(go.Scatter(y=predict_sim,mode='lines',line=dict(width=1),showlegend=False))
     
-fig_plot_sim.update_layout(title=f'Simulations: {simulations}', xaxis_title='steps', yaxis_title='mean')
-st.plotly_chart(fig_plot_sim, use_container_width=True)
+    #plotando horizontes de simualçao
+    #criando graficos
+    fig_plot_ibc.add_trace(go.Scatter(y=ibc.values, mode='lines'))
+    fig_plot_beta.add_trace(go.Scatter(y=beta.values, mode='lines'))
+
+fig_plot_sim.update_layout(title=f'Sigma Simulations: {simulations}', xaxis_title='steps', yaxis_title='mean', showlegend=False)
+fig_plot_ibc.update_layout(title=f'IBC-Br - Simulations: {simulations}', xaxis_title='steps', yaxis_title='values', showlegend=False)
+fig_plot_beta.update_layout(title=f'BETA - Simulations: {simulations}', xaxis_title='steps', yaxis_title='values', showlegend=False)
+#plotando com o streamlit
+col1_plot, col2_plot = st.columns(2)
+
+with col1_plot:
+    st.plotly_chart(fig_plot_ibc, use_container_width=True, key='ibc-br')
+with col2_plot:
+    st.plotly_chart(fig_plot_beta, use_container_width=True, key='beta_')
+
+st.plotly_chart(fig_plot_sim)
 
 #juntando previsoes e variaveis independentes
 pred_concat = pd.concat(pred_list)
