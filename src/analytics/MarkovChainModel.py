@@ -19,9 +19,10 @@ def hmm_(data:pd.DataFrame):
     model = hmm.GaussianHMM(n_components=2, random_state=42, n_iter=1000).fit(X)
     states = model.predict(X)
     reg = pd.Series(states, index=data_.index, name='regime')
+    prob = model.predict_proba(X)[:,1]
     
     data_['regime'] = states
     data_group = data_.groupby('regime')[['volume_change', 'beta', 'vol_petr4', 'ibov']].mean()
     print(data_group)
     print(f"densidade: {data_['regime'].value_counts(normalize=True)}")
-    return reg
+    return reg, prob, model
