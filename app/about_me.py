@@ -4,7 +4,7 @@ import streamlit as st
 st.markdown('# About Me')
 
 st.text("""
-       My name is Wesley de Souza Matos, a Data Scientist from Brazil.
+        My name is Wesley de Souza Matos, a Data Scientist from Brazil.
 
 I am based in Rio de Janeiro, where I study and work in Data Science, Risk Analysis, Machine Learning, and Financial Modeling. This project was developed to help users monitor oil market signals, assess uncertainty and risk, explore possible future scenarios, generate forecasts, and perform survival analysis on market dynamics.
 

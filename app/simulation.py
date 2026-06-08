@@ -20,8 +20,8 @@ st.text("""
 
 # simulaçao 
 today = datetime.date.today()
-start = st.date_input('Start', value=date(2020,1,1), min_value=date(2004, 1,1), max_value=today, key='start')
-end =  st.date_input('End', value=today, min_value=start, max_value=today, key='end')
+start = st.date_input('Start', value=date(2020,1,1), min_value=date(2004, 1,1), max_value=today, key='Start')
+end =  st.date_input('End', value=today, min_value=start, max_value=today, key='End')
 
 req = Requests(['24364', '433'])
 start_req = start.strftime('%d/%m/%Y')
