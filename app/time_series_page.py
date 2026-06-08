@@ -197,6 +197,10 @@ with dd_col2:
     st.plotly_chart(fig_dd_ibov)
     st.metric(label='Max Drawdown', value=round(dd_ibov.min(),2))
 
+regime_row = st.container(border=True)
+with regime_row:
+    st.metric(label='Atual Regime', value=1, delta='In transition')
+
 st.markdown("""
     <style>
     .block-container {
