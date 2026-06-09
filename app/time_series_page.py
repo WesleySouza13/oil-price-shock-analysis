@@ -8,6 +8,8 @@ import pandas as pd
 from src.analytics.PlotSurface import Plot3d
 import os 
 from src.analytics.MarkovChain import MarkovModel
+import joblib
+from sklearn.preprocessing import StandardScaler
 
 codes_list = ['24364']
 start_date = "01/01/2003"
@@ -201,12 +203,27 @@ regime_row = st.container(border=True)
 with regime_row:
     st.metric(label='Atual Regime', value=1, delta='In transition')
 
+# carregando modelo de markov
+markov_path = os.path.join('MarkovModel.pkl')
+markov_model = joblib.load(markov_path)
+
+#criando dados exog para cadeia de markov
+df_markov = yf_data.copy()
+df_markov['BETA'] = df_with_beta['BETA']
+df_markov.dropna(inplace=True)
+df_markov = df_markov.drop('IBC-Br', axis=1)
+
+def markov_chain_prob(data:pd.DataFrame):
+    exog = data.tail(1)
+    scaler = StandardScaler()
+    X = scaler.fit_transform(exog)
+    return  markov_model.predict_proba(X)[:,1]
 st.markdown("""
     <style>
     .block-container {
-        max-width: 95%;
-        padding-left: 2rem;
-        padding-right: 2rem;
+        max-width: 90%;
+        padding-left: 1rem;
+        padding-right: 1rem;
     }
     </style>
 """, unsafe_allow_html=True)
