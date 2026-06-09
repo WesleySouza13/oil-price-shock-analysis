@@ -10,7 +10,7 @@ import os
 from src.analytics.MarkovChain import MarkovModel
 import joblib
 from sklearn.preprocessing import StandardScaler
-
+from analytics.ReturnPrices import hmm_
 codes_list = ['24364']
 start_date = "01/01/2003"
 end_date = dt.date.today().strftime("%d/%m/%Y")
@@ -199,10 +199,6 @@ with dd_col2:
     st.plotly_chart(fig_dd_ibov)
     st.metric(label='Max Drawdown', value=round(dd_ibov.min(),2))
 
-regime_row = st.container(border=True)
-with regime_row:
-    st.metric(label='Atual Regime', value=1, delta='In transition')
-
 # carregando modelo de markov
 markov_path = os.path.join('MarkovModel.pkl')
 markov_model = joblib.load(markov_path)
@@ -218,6 +214,21 @@ def markov_chain_prob(data:pd.DataFrame):
     scaler = StandardScaler()
     X = scaler.fit_transform(exog)
     return  markov_model.predict_proba(X)[:,1]
+
+fig_beta_regime = px.line(df_with_beta['BETA'])
+fig_beta_regime.add_trace(go.Scatter(x=df_with_beta.index,y=df_with_beta['Regime'], mode='lines', marker=dict(size=8, color="#FF6804", symbol='0'), name='regime'))
+fig_beta_regime.add_trace(go.Scatter(x=df_with_beta.index,y=df_with_beta['Regime'], mode='markers', marker=dict(size=8, color="#FF6804", symbol='circle'), name='regime'))
+fig_beta_regime.update_layout(title='Regime Transitions by BETA', xaxis_title='date', yaxis_title='BETA')
+st.plotly_chart(fig_beta_regime)
+
+# probabilidades de mudanças de regime 
+prob_markov = markov_chain_prob(df_markov)
+prob_markov = np.round(prob_markov,6)
+
+regime_row = st.container(border=True)
+with regime_row:
+    st.metric(label='Atual Regime', value=prob_markov, delta='In transition')
+
 st.markdown("""
     <style>
     .block-container {
