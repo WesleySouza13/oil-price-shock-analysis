@@ -10,7 +10,5 @@ def returns_prices(data:pd.DataFrame):
     return pd.DataFrame({
         'returns':returns,
         'vol_petr4':vol,
-        'volume_change': data['Volume_PETR4.SA'].pct_change(),
-        'beta':data['BETA'],
-        'ibov': data['Close_IBOV'].rolling(12).std()}).dropna()
+        'beta':data['BETA']}).dropna()
         

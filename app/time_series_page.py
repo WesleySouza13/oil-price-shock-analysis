@@ -10,7 +10,9 @@ import os
 from src.analytics.MarkovChain import MarkovModel
 import joblib
 from sklearn.preprocessing import StandardScaler
-from analytics.ReturnPrices import hmm_
+#from analytics.ReturnPrices import hmm_
+from src.analytics.ReturnPrices import returns_prices
+from src.analytics.RiskBandsFunc import risk_bands_func
 codes_list = ['24364']
 start_date = "01/01/2003"
 end_date = dt.date.today().strftime("%d/%m/%Y")
@@ -199,35 +201,55 @@ with dd_col2:
     st.plotly_chart(fig_dd_ibov)
     st.metric(label='Max Drawdown', value=round(dd_ibov.min(),2))
 
-# carregando modelo de markov
-markov_path = os.path.join('MarkovModel.pkl')
-markov_model = joblib.load(markov_path)
-
-#criando dados exog para cadeia de markov
-df_markov = yf_data.copy()
-df_markov['BETA'] = df_with_beta['BETA']
-df_markov.dropna(inplace=True)
-df_markov = df_markov.drop('IBC-Br', axis=1)
-
-def markov_chain_prob(data:pd.DataFrame):
-    exog = data.tail(1)
-    scaler = StandardScaler()
-    X = scaler.fit_transform(exog)
-    return  markov_model.predict_proba(X)[:,1]
-
+#plotando regime ao longo do historico de BETA
 fig_beta_regime = px.line(df_with_beta['BETA'])
 fig_beta_regime.add_trace(go.Scatter(x=df_with_beta.index,y=df_with_beta['Regime'], mode='lines', marker=dict(size=8, color="#FF6804", symbol='0'), name='regime'))
 fig_beta_regime.add_trace(go.Scatter(x=df_with_beta.index,y=df_with_beta['Regime'], mode='markers', marker=dict(size=8, color="#FF6804", symbol='circle'), name='regime'))
 fig_beta_regime.update_layout(title='Regime Transitions by BETA', xaxis_title='date', yaxis_title='BETA')
 st.plotly_chart(fig_beta_regime)
 
-# probabilidades de mudanças de regime 
-prob_markov = markov_chain_prob(df_markov)
-prob_markov = np.round(prob_markov,6)
+# carregando modelo de cadeia de markov
+markov_path = os.path.join('MarkovModel.pkl')
+markov_model = joblib.load(markov_path)
 
+# criando dados para modelo de markov 
+data_markov = yf_data.copy()
+data_markov = data_markov.drop('IBC-Br', axis=1)
+data_markov['BETA'] = df_with_beta['BETA']
+data_markov.dropna(inplace=True)
+
+# criando df de inferencia para cadeia de markov 
+df_inference = returns_prices(data_markov)
+
+# funçao para inferencia do modelo de markov
+def markov_inference(data:pd.DataFrame):
+    scaler = StandardScaler()
+    X = scaler.fit_transform(data)
+    return markov_model.predict_proba(X)[:,1]
+
+#fazendo inferencia
+prob_markov = markov_inference(df_inference)
+
+# conteiner de mudança de regime
 regime_row = st.container(border=True)
 with regime_row:
-    st.metric(label='Atual Regime', value=prob_markov, delta='In transition')
+    st.metric(label=f"Prob. Atual Regime | date:  {df_inference.index[-1].strftime('%Y/%m/%d')}", value=np.round(prob_markov[-1], 5), delta=f'{risk_bands_func(prob_markov[-1])}', delta_color='orange')
+
+# criando novos states para separaçao de desvios e media
+states = pd.qcut(prob_markov, 2, labels=['No regime', 'In Transition'])
+df_inference['states'] = states 
+df_inference.rename(columns={'vol_petr4':'Volatility_PETR4'}, inplace=True)
+std_group_by = df_inference.groupby('states')[['returns','beta', 'Volatility_PETR4']].std()
+mean_group_by = df_inference.groupby('states')[['returns','beta', 'Volatility_PETR4']].mean()
+
+group1, group2 = st.columns(2)
+with group1:
+    st.markdown('Regimes - standard deviation')
+    st.dataframe(std_group_by)
+with group2:
+    st.markdown('Regimes - averages')
+    st.dataframe(mean_group_by)
+
 
 st.markdown("""
     <style>
