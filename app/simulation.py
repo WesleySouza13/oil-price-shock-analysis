@@ -92,7 +92,7 @@ st.plotly_chart(plot_beta_surface)
 st.markdown("Select a interval for simulation:")
 start_mc = st.date_input('Start', value=date(2020,1,1),min_value='2004-01-01', max_value=today, key='start_date')
 end_mc = st.date_input('End', min_value='2005-01-01', max_value=today, key='end_date')
-scenarios = st.number_input('Scenarios', min_value=252)
+scenarios = st.number_input('Scenarios', min_value=2, max_value=36, value=12)
 st.markdown('Simulation Interval - Rolling Window Default: 12')
 data_sim = data_sim.loc[start_mc:end_mc]
 
@@ -147,7 +147,8 @@ with box:
     shock_ibc = st.number_input('Input Shock in IBC-Br')
     shock_beta = st.number_input('Input Shock in BETA')
 
-simulations = st.number_input('Simulations', min_value=2)
+simulations = st.number_input('Simulations', min_value=2, max_value=5000)
+st.markdown('Default: 2 simulations')
 
 # fazendo multiplas simulaçoes
 pred_list = []
