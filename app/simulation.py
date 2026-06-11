@@ -165,7 +165,7 @@ for _ in range(simulations):
     y_hat = np.cumsum(predict_sim)/np.arange(len(predict_sim))
     pred_list.append(pred_series)
     df_sim_list.append(df_sim)
-    fig_plot_sim.add_trace(go.Scatter(y=predict_sim,mode='lines',line=dict(width=1),showlegend=False))
+    fig_plot_sim.add_trace(go.Scatter(y=y_hat,mode='lines',line=dict(width=1),showlegend=False))
     
     #plotando horizontes de simualçao
     #criando graficos
